@@ -1,121 +1,38 @@
-use std::time::Duration;
+mod api;
+mod config;
+mod error;
+mod logging;
+mod router;
+mod utils;
 
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::{Router, routing::get};
-use color_eyre::eyre::{Result, eyre};
-use serde::Serialize;
+use color_eyre::eyre::Result;
+use config::load_config;
+use logging::setup_tracing;
+use router::create_router;
 use tokio::net::TcpListener;
-use tokio::signal;
-use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
-use tracing_error::ErrorLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-fn setup_tracing() {
-    color_eyre::install().unwrap(); // 自動啟用 backtrace & 彩色錯誤
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                format!(
-                    "{}=debug,tower_http=debug,axum=trace",
-                    env!("CARGO_CRATE_NAME")
-                )
-                .into()
-            }),
-        )
-        .with(tracing_subscriber::fmt::layer().without_time())
-        .with(ErrorLayer::default()) // <- 追蹤 error source
-        .init();
-}
-
-#[derive(Serialize)]
-pub struct ApiResponse<T> {
-    pub success: bool,
-    pub data: Option<T>,
-    pub error: Option<ApiErrorInfo>,
-}
-
-#[derive(Serialize)]
-pub struct ApiErrorInfo {
-    pub code: u16,
-    pub message: String,
-}
-
-pub fn success<T: Serialize>(data: T) -> impl IntoResponse {
-    let response = ApiResponse {
-        success: true,
-        data: Some(data),
-        error: None,
-    };
-    (StatusCode::OK, Json(response))
-}
-
-pub fn error(status: StatusCode, message: impl Into<String>) -> impl IntoResponse {
-    let response = ApiResponse::<()> {
-        success: false,
-        data: None,
-        error: Some(ApiErrorInfo {
-            code: status.as_u16(),
-            message: message.into(),
-        }),
-    };
-    (status, Json(response))
-}
+use utils::shutdown::shutdown_signal;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    setup_tracing();
+    // 設置日誌系統
+    setup_tracing()?;
 
-    // Create a regular axum app.
-    let app = Router::new()
-        .route("/ok", get(|| async { success("ok") }))
-        .route(
-            "/fail",
-            get(|| async {
-                let err = eyre!("Intentional error");
-                tracing::error!("{:?}", err); // <- 印完整 backtrace + source
-                error(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-            }),
-        )
-        .layer((
-            TraceLayer::new_for_http(),
-            TimeoutLayer::new(Duration::from_secs(10)),
-        ));
+    // 創建應用路由
+    let app = create_router();
 
-    // Create a `TcpListener` using tokio.
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let config = load_config();
 
-    // Run the server with graceful shutdown
+    let addr = format!("{}:{}", config.host, config.port);
+
+    // 創建 TCP 監聽器
+    let listener = TcpListener::bind(&addr).await?;
+
+    tracing::info!("Server listening on {}", addr);
+
+    // 運行服務器並支持優雅關閉
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
-}
-
-async fn shutdown_signal() {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
-
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
-    }
 }
