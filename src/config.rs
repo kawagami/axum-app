@@ -9,6 +9,8 @@ pub struct AppConfig {
     pub host: String,
     /// 請求超時時間
     pub request_timeout: Duration,
+    /// 請求超時時間
+    pub database_url: String,
 }
 
 impl Default for AppConfig {
@@ -17,13 +19,16 @@ impl Default for AppConfig {
             port: 3000,
             host: "0.0.0.0".to_string(),
             request_timeout: Duration::from_secs(10),
+            // database_url: "postgresql://kawa:kawa@host.docker.internal:5432/kawa".to_string(),
+            database_url: std::env::var("DATABASE_URL").expect("Not Found DATABASE_URL"),
         }
     }
 }
 
 /// 載入應用程式配置
 pub fn load_config() -> AppConfig {
-    // 這裡可以從環境變數或配置檔案載入配置
-    // 現在先使用預設值
+    // 載入 .env 檔案
+    dotenvy::dotenv().ok();
+
     AppConfig::default()
 }

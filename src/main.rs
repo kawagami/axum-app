@@ -9,6 +9,7 @@ use color_eyre::eyre::Result;
 use config::load_config;
 use logging::setup_tracing;
 use router::create_router;
+use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use utils::shutdown::shutdown_signal;
 
@@ -28,6 +29,14 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind(&addr).await?;
 
     tracing::info!("Server listening on {}", addr);
+
+    let db = PgPoolOptions::new()
+        .max_connections(20)
+        .connect(&config.database_url)
+        .await
+        .expect("failed to connect to DATABASE_URL");
+
+    sqlx::migrate!().run(&db).await?;
 
     // 運行服務器並支持優雅關閉
     axum::serve(listener, app)
