@@ -1,57 +1,69 @@
-use color_eyre::eyre::Report;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use std::fmt;
 
-/// 自定義錯誤類型
-#[derive(Debug, thiserror::Error)]
-pub enum AppError {
-    #[error("Internal server error: {0}")]
-    Internal(String),
-    // #[error("Not found: {0}")]
-    // NotFound(String),
+use crate::api::response;
 
-    // #[error("Bad request: {0}")]
-    // BadRequest(String),
-
-    // #[error("Unauthorized: {0}")]
-    // Unauthorized(String),
+/// 應用程序錯誤類型
+pub struct AppError {
+    pub status_code: StatusCode,
+    pub message: String,
 }
 
 impl AppError {
-    // /// 獲取對應的 HTTP 狀態碼
-    // pub fn status_code(&self) -> StatusCode {
-    //     match self {
-    //         Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    //         Self::NotFound(_) => StatusCode::NOT_FOUND,
-    //         Self::BadRequest(_) => StatusCode::BAD_REQUEST,
-    //         Self::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-    //     }
-    // }
-}
+    pub fn new(status_code: StatusCode, message: impl Into<String>) -> Self {
+        Self {
+            status_code,
+            message: message.into(),
+        }
+    }
 
-/// 從 color_eyre::Report 轉換為 AppError
-impl From<Report> for AppError {
-    fn from(err: Report) -> Self {
-        tracing::error!("{:?}", err);
-        Self::Internal(err.to_string())
+    pub fn internal_error(message: impl Into<String>) -> Self {
+        Self::new(StatusCode::INTERNAL_SERVER_ERROR, message)
     }
 }
 
-// /// 便捷函數，用於創建各種常見錯誤
-// pub mod errors {
-//     use super::*;
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.status_code, self.message)
+    }
+}
 
-//     pub fn internal(message: impl Into<String>) -> AppError {
-//         AppError::Internal(message.into())
-//     }
+impl fmt::Debug for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "AppError {{ status_code: {}, message: {} }}",
+            self.status_code, self.message
+        )
+    }
+}
 
-//     pub fn not_found(message: impl Into<String>) -> AppError {
-//         AppError::NotFound(message.into())
-//     }
+impl std::error::Error for AppError {}
 
-//     pub fn bad_request(message: impl Into<String>) -> AppError {
-//         AppError::BadRequest(message.into())
-//     }
+// 實現 IntoResponse，這樣可以直接從 Route Handler 返回 Result<T, AppError>
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        let message = self.message.clone();
+        tracing::error!("API Error: {}", &self);
 
-//     pub fn unauthorized(message: impl Into<String>) -> AppError {
-//         AppError::Unauthorized(message.into())
-//     }
-// }
+        // 使用之前定義的 error 函數創建錯誤響應
+        response::error(self.status_code, message).into_response()
+    }
+}
+
+// 從 sqlx 錯誤類型自動轉換為 AppError
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        tracing::error!("Database error: {}", err);
+        Self::internal_error(format!("Database error: {}", err))
+    }
+}
+
+// 從 reqwest 錯誤類型自動轉換為 AppError
+impl From<reqwest::Error> for AppError {
+    fn from(err: reqwest::Error) -> Self {
+        tracing::error!("HTTP request error: {}", err);
+        Self::internal_error(format!("HTTP request error: {}", err))
+    }
+}
