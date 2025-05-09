@@ -13,7 +13,7 @@ pub async fn health_ok(
     State(state): State<Arc<AppState>>,
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     // db 查詢
-    let rows = sqlx::query!("SELECT * FROM users")
+    let rows = sqlx::query("SELECT * FROM users")
         .fetch_all(&state.db)
         .await?;
 

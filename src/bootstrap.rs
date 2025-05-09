@@ -10,7 +10,7 @@ pub async fn setup_app_state(config: &AppConfig) -> Result<Arc<AppState>> {
         .connect(&config.database_url)
         .await?;
 
-    sqlx::migrate!().run(&db).await?;
+    sqlx::migrate!("./migrations").run(&db).await?;
 
     let http_client = Client::builder().timeout(Duration::from_secs(10)).build()?;
 
