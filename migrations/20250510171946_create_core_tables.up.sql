@@ -1,8 +1,5 @@
 -- Add up migration script here
 
--- UUID extension (Postgres 內建，不要忘記開)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ENUM types
 DO $$
 BEGIN
