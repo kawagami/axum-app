@@ -5,7 +5,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::{
-    api::handlers::{health_fail, health_ok},
+    api::handlers::{get_stock_day_all, health_fail, health_ok},
     config::load_config,
     state::AppState,
 };
@@ -16,6 +16,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ok", get(health_ok))
         .route("/fail", get(health_fail))
+        .route("/get_stock_day_all", get(get_stock_day_all))
         .layer((
             TraceLayer::new_for_http(),
             TimeoutLayer::new(config.request_timeout),
