@@ -67,3 +67,11 @@ impl From<reqwest::Error> for AppError {
         Self::internal_error(format!("HTTP request error: {}", err))
     }
 }
+
+// 從 reqwest 錯誤類型自動轉換為 AppError
+impl From<chrono::ParseError> for AppError {
+    fn from(err: chrono::ParseError) -> Self {
+        tracing::error!("chrono failed to parse: {}", err);
+        Self::internal_error(format!("chrono failed to parse: {}", err))
+    }
+}

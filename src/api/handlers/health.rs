@@ -5,7 +5,7 @@ use crate::{
     error::AppError,
     state::AppState,
 };
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{extract::State, http::StatusCode};
 use chrono::NaiveDate;
 use color_eyre::eyre::eyre;
 use serde::Deserialize;
@@ -46,17 +46,9 @@ pub async fn get_stock_day_all(
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     let url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL";
 
-    let resp: TwseApiResponse = state
-        .http_client
-        .get(url)
-        .send()
-        .await
-        .expect("Failed to send request")
-        .json()
-        .await
-        .expect("Failed to parse JSON");
+    let resp: TwseApiResponse = state.http_client.get(url).send().await?.json().await?;
 
-    let trade_date = NaiveDate::parse_from_str(&resp.date, "%Y%m%d").expect("Failed to parse date");
+    let trade_date = NaiveDate::parse_from_str(&resp.date, "%Y%m%d")?;
 
     let parse_i64 = |s: &str| s.replace(",", "").parse::<i64>().ok();
     let parse_f64 = |s: &str| s.replace(",", "").parse::<f64>().ok();
@@ -143,5 +135,5 @@ pub async fn get_stock_day_all(
         .execute(&state.db)
         .await?;
 
-    Ok(Json(()))
+    Ok(success("成功"))
 }
