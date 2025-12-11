@@ -19,7 +19,10 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/get_stock_day_all", get(get_stock_day_all))
         .layer((
             TraceLayer::new_for_http(),
-            TimeoutLayer::new(config.request_timeout),
+            TimeoutLayer::with_status_code(
+                axum::http::StatusCode::SERVICE_UNAVAILABLE,
+                config.request_timeout,
+            ),
         ))
         .with_state(state)
 }
