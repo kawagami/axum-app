@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # axum-app:
   #   image: kawagami77/axum-app:latest
