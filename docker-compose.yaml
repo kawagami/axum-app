@@ -9,7 +9,7 @@ services:
   #   working_dir: /app
   #   volumes:
   #     - ./migrations:/app/migrations
-  #     - ./.env.build:/app/.env
+  #     - ./.env:/app/.env
   #   depends_on:
   #     pgsql:
   #       condition: service_healthy
