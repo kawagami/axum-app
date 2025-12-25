@@ -5,15 +5,13 @@ use crate::{
     error::AppError,
     state::AppState,
 };
-use axum::{extract::State, http::StatusCode};
+use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use chrono::NaiveDate;
 use color_eyre::eyre::eyre;
 use serde::Deserialize;
 
 /// 健康檢查 - OK 路由處理函數
-pub async fn health_ok(
-    State(state): State<Arc<AppState>>,
-) -> Result<impl axum::response::IntoResponse, AppError> {
+pub async fn health_ok(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse, AppError> {
     // db 查詢
     let rows = sqlx::query("SELECT * FROM users")
         .fetch_all(&state.db)
@@ -28,7 +26,7 @@ pub async fn health_ok(
 }
 
 /// 健康檢查 - 故意失敗的路由處理函數
-pub async fn health_fail() -> impl axum::response::IntoResponse {
+pub async fn health_fail() -> impl IntoResponse {
     let err = eyre!("Intentional error");
     tracing::error!("{:?}", err); // 印完整 backtrace + source
     error(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
@@ -43,7 +41,7 @@ struct TwseApiResponse {
 /// 取公開資訊觀測站 當日日成交資訊 資料並且整理進資料庫
 pub async fn get_stock_day_all(
     State(state): State<Arc<AppState>>,
-) -> Result<impl axum::response::IntoResponse, AppError> {
+) -> Result<impl IntoResponse, AppError> {
     let url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL";
 
     let resp: TwseApiResponse = state.http_client.get(url).send().await?.json().await?;
