@@ -13,6 +13,9 @@ services:
   #   depends_on:
   #     pgsql:
   #       condition: service_healthy
+  #     valkey:
+  #       condition: service_healthy
+
   pgsql:
     image: postgres:17-alpine
     container_name: pgsql
@@ -30,3 +33,17 @@ services:
       timeout: 10s
       retries: 5
       start_period: 80s
+
+  # 新增 Valkey 服務
+  valkey:
+    image: valkey/valkey:9-alpine
+    container_name: valkey
+    ports:
+      - ${VALKEY_PORT}:6379
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # 如果你想讓它以密碼啟動，可以使用以下 command
+    # command: valkey-server --requirepass yourpassword

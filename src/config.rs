@@ -1,3 +1,5 @@
+// src/config.rs
+
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -7,6 +9,7 @@ pub struct AppConfig {
     pub request_timeout: Duration,
     pub database_url: String,
     pub db_max_connections: u32,
+    pub valkey_url: String, // 新增
 }
 
 impl Default for AppConfig {
@@ -28,6 +31,7 @@ impl Default for AppConfig {
                 .expect("Not Found DB_MAX_CONNECTIONS")
                 .parse::<u32>()
                 .expect("DB_MAX_CONNECTIONS value must be a valid u32 number"),
+            valkey_url: std::env::var("VALKEY_URL").expect("Not Found VALKEY_URL"), // 新增
         }
     }
 }

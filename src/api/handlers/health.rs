@@ -12,6 +12,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use color_eyre::eyre::eyre;
+use redis::AsyncCommands;
 use serde::Deserialize;
 
 /// 健康檢查 - OK 路由處理函數
@@ -24,7 +25,19 @@ pub async fn health_ok(State(state): State<Arc<AppState>>) -> Result<impl IntoRe
     // http 請求
     let res = state.http_client.get("https://example.com").send().await?;
 
-    tracing::info!("Users: {}, Http status: {}", rows.len(), res.status());
+    // redis 測試
+    let mut redis = state.redis.clone();
+    let pong: String = redis
+        .ping()
+        .await
+        .map_err(|e| AppError::internal_error(format!("Redis 連接失敗: {}", e)))?;
+
+    tracing::info!(
+        "Users: {}, Http status: {}, Redis: {}",
+        rows.len(),
+        res.status(),
+        pong
+    );
 
     Ok(success("ok"))
 }
