@@ -5,7 +5,11 @@ use crate::{
     error::AppError,
     state::AppState,
 };
-use axum::{extract::State, http::StatusCode, response::IntoResponse};
+use axum::{
+    extract::State,
+    http::{Method, StatusCode, Uri},
+    response::IntoResponse,
+};
 use chrono::NaiveDate;
 use color_eyre::eyre::eyre;
 use serde::Deserialize;
@@ -134,4 +138,11 @@ pub async fn get_stock_day_all(
         .await?;
 
     Ok(success("成功"))
+}
+
+/// 404 處理函數 - 包含請求資訊
+pub async fn handler_404(method: Method, uri: Uri) -> impl IntoResponse {
+    tracing::warn!("404 Not Found: {} {}", method, uri);
+
+    AppError::not_found(format!("路徑 {} {} 不存在", method, uri.path()))
 }

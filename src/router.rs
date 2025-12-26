@@ -1,5 +1,5 @@
 use crate::{
-    api::handlers::{get_stock_day_all, health_fail, health_ok, upload_image},
+    api::handlers::{get_stock_day_all, handler_404, health_fail, health_ok, upload_image},
     config::load_config,
     state::AppState,
 };
@@ -19,6 +19,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/fail", get(health_fail))
         .route("/get_stock_day_all", get(get_stock_day_all))
         .route("/upload_image", post(upload_image))
+        .fallback(handler_404)
         .layer((
             TraceLayer::new_for_http(),
             TimeoutLayer::with_status_code(StatusCode::SERVICE_UNAVAILABLE, config.request_timeout),
