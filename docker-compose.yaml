@@ -8,7 +8,6 @@ services:
   #     - "3000:3000"
   #   working_dir: /app
   #   volumes:
-  #     - ./migrations:/app/migrations
   #     - ./.env:/app/.env
   #   depends_on:
   #     pgsql:
