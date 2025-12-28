@@ -143,6 +143,20 @@ pub async fn upload_image(
     let credentials: FirebaseCredentials = serde_json::from_str(&creds_json)
         .map_err(|e| AppError::bad_request(format!("無效的 Firebase credentials 格式: {}", e)))?;
 
+    tracing::info!("cred_type: {}", credentials.cred_type);
+    tracing::info!("project_id: {}", credentials.project_id);
+    tracing::info!("private_key_id: {}", credentials.private_key_id);
+    tracing::info!("private_key: {}", credentials.private_key);
+    tracing::info!("client_email: {}", credentials.client_email);
+    tracing::info!("client_id: {}", credentials.client_id);
+    tracing::info!("auth_uri: {}", credentials.auth_uri);
+    tracing::info!("token_uri: {}", credentials.token_uri);
+    tracing::info!(
+        "auth_provider_x509_cert_url: {}",
+        credentials.auth_provider_x509_cert_url
+    );
+    tracing::info!("client_x509_cert_url: {}", credentials.client_x509_cert_url);
+
     // 從 credentials 中取得 project_id 作為預設 bucket 名稱
     let bucket = bucket_name.unwrap_or_else(|| format!("{}.appspot.com", credentials.project_id));
 

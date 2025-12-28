@@ -2,10 +2,9 @@
 * rust 1.92.0
 
 # 目前目標
-* 123
+* [google & discord ... 等等的 oauth](https://gemini.google.com/app/aa8f2c84dd3afb9a?hl=zh-TW)
 
 # 未來預計目標
-* google & discord ... 等等的 oauth
 * 記帳功能
 
 # 已經完成功能
