@@ -3,6 +3,7 @@
 
 # 目前目標
 * [google & discord ... 等等的 oauth](https://gemini.google.com/app/aa8f2c84dd3afb9a?hl=zh-TW)
+    * [討論串2](https://gemini.google.com/app/f0371e3f636c4138?hl=zh-TW)
 
 # 未來預計目標
 * 記帳功能

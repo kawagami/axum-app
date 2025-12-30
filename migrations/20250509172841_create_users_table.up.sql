@@ -2,32 +2,30 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE,  -- 可 null，但如果有要唯一
-    name TEXT NOT NULL,
+    email TEXT UNIQUE, -- 這裡可以維持 UNIQUE，但考慮未來擴展可改為非必填
+    display_name TEXT,
     avatar_url TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    is_active BOOLEAN DEFAULT TRUE, -- 方便暫停帳戶
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- linked_accounts table
-CREATE TABLE linked_accounts (
+CREATE TABLE user_identities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-    provider TEXT NOT NULL,  -- 'google', 'github', etc
+    provider TEXT NOT NULL, 
     provider_user_id TEXT NOT NULL,
-
-    email TEXT,  -- 該 provider 的 email (optional)
+    -- 建議增加儲存 OAuth 提供的 Email，有助於帳號救援或身分識別
+    provider_email TEXT, 
     access_token TEXT,
     refresh_token TEXT,
     expires_at TIMESTAMPTZ,
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    UNIQUE (provider, provider_user_id)
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(provider, provider_user_id)
 );
 
--- Optional: 加速 user_id 查詢 (建議加)
-CREATE INDEX idx_linked_accounts_user_id ON linked_accounts(user_id);
+-- 建立索引提升查詢效率
+CREATE INDEX idx_user_identities_user_id ON user_identities(user_id);
